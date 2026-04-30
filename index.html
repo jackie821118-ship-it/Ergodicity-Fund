@@ -8,8 +8,6 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://unpkg.com/prop-types@15/prop-types.min.js"></script>
-  <script src="https://unpkg.com/recharts@2.1.16/umd/Recharts.js"></script>
   <style>
     html, body, #root {
       background-color: #000 !important;
@@ -20,365 +18,268 @@
       overflow-x: hidden;
     }
     * { box-sizing: border-box; }
-    body {
-      font-size: 16px;
-      line-height: 1.4;
-      -webkit-font-smoothing: antialiased;
-    }
-    main {
-      max-width: 480px;
-      margin: 0 auto;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    .animate-spin { animation: spin 1s linear infinite; }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    .animate-pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+    body { font-size: 16px; line-height: 1.4; -webkit-font-smoothing: antialiased; }
+    main { max-width: 480px; margin: 0 auto; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .pulse { animation: pulse 2s infinite; }
   </style>
 </head>
 <body>
   <div id="root"></div>
-
   <script type="text/babel">
-    const {
-      useState, useEffect, useCallback, useMemo
-    } = React;
-
-    const {
-      LineChart, Line, XAxis, YAxis, CartesianGrid,
-      Tooltip, ResponsiveContainer
-    } = window.Recharts;
-
-    // Lucide icons via UMD
-    const createIcon = (name) => {
-      return ({ className = "w-6 h-6", ...props }) => {
-        const ref = React.useRef(null);
-        React.useEffect(() => {
-          if (ref.current && window.lucide) {
-            ref.current.innerHTML = '';
-            const svgStr = window.lucide.icons[name];
-            if (svgStr) {
-              const tmp = document.createElement('div');
-              tmp.innerHTML = svgStr[2]; // SVG string
-            }
-          }
-        }, []);
-        // Fallback: render via lucide createIcons or inline SVG paths
-        const iconPaths = {
-          TrendingUp: 'M22 7 L13 16 9 12 2 19 M16 7 h6 v6',
-          PieChart: 'M21.21 15.89A10 10 0 1 1 8 2.83 M22 12A10 10 0 0 0 12 2v10z',
-          List: 'M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01',
-          History: 'M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5 M12 7v5l4 2',
-          Gift: 'M20 12v10H4V12 M2 7h20v5H2z M12 22V7 M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z',
-          RefreshCw: 'M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8 M21 3v5h-5 M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16 M8 16H3v5',
-          AlertCircle: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 8v4 M12 16h.01',
-          User: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
-          ChevronDown: 'M6 9l6 6 6-6',
-          ChevronUp: 'M18 15l-6-6-6 6',
-          Calendar: 'M8 2v4 M16 2v4 M3 10h18 M21 8H3a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2z',
-          BarChart3: 'M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3',
-        };
-        const path = iconPaths[name] || '';
-        return (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={className}
-            {...props}
-          >
-            {path.split(' M').map((d, i) => (
-              <path key={i} d={i === 0 ? d : 'M' + d} />
-            ))}
-          </svg>
-        );
-      };
-    };
-
-    const TrendingUp = createIcon('TrendingUp');
-    const PieChart = createIcon('PieChart');
-    const List = createIcon('List');
-    const History = createIcon('History');
-    const Gift = createIcon('Gift');
-    const RefreshCw = createIcon('RefreshCw');
-    const AlertCircle = createIcon('AlertCircle');
-    const User = createIcon('User');
-    const ChevronDown = createIcon('ChevronDown');
-    const ChevronUp = createIcon('ChevronUp');
-    const Calendar = createIcon('Calendar');
-    const BarChart3 = createIcon('BarChart3');
+    const { useState, useEffect, useCallback, useMemo } = React;
 
     const SPREADSHEET_ID = "1KbG0zxG2Nszrx7T5zXsobcueyP3L1_cfal0DKZ14CMw";
 
-    const getValByKey = (obj, keyName) => {
-      if (!obj) return "";
-      if (obj[keyName] !== undefined) return obj[keyName];
-      const cleanKey = (k) => k.replace(/\s/g, "").replace(/[\u200B-\u200D\uFEFF]/g, "");
-      const targetKey = cleanKey(keyName);
-      const foundKey = Object.keys(obj).find(
-        (k) => cleanKey(k) === targetKey || cleanKey(k).includes(targetKey)
+    // SVG Icons
+    const Icon = ({ d, className = "w-6 h-6", color }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+        stroke={color || "currentColor"} strokeWidth="2" strokeLinecap="round"
+        strokeLinejoin="round" className={className}>
+        {[].concat(d).map((p, i) => <path key={i} d={p} />)}
+      </svg>
+    );
+    const TrendingUp   = (p) => <Icon {...p} d={["M22 7L13 16l-4-4L2 19","M16 7h6v6"]} />;
+    const PieChart     = (p) => <Icon {...p} d={["M21.21 15.89A10 10 0 1 1 8 2.83","M22 12A10 10 0 0 0 12 2v10z"]} />;
+    const ListIcon     = (p) => <Icon {...p} d={["M8 6h13","M8 12h13","M8 18h13","M3 6h.01","M3 12h.01","M3 18h.01"]} />;
+    const HistoryIcon  = (p) => <Icon {...p} d={["M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8","M3 3v5h5","M12 7v5l4 2"]} />;
+    const GiftIcon     = (p) => <Icon {...p} d={["M20 12v10H4V12","M2 7h20v5H2z","M12 22V7","M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z","M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"]} />;
+    const RefreshIcon  = (p) => <Icon {...p} d={["M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8","M21 3v5h-5","M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16","M8 16H3v5"]} />;
+    const AlertIcon    = (p) => <Icon {...p} d={["M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z","M12 8v4","M12 16h.01"]} />;
+    const UserIcon     = (p) => <Icon {...p} d={["M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2","M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"]} />;
+    const ChevronDown  = (p) => <Icon {...p} d="M6 9l6 6 6-6" />;
+    const ChevronUp    = (p) => <Icon {...p} d="M18 15l-6-6-6 6" />;
+    const CalendarIcon = (p) => <Icon {...p} d={["M8 2v4","M16 2v4","M3 10h18","M21 8H3a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2z"]} />;
+    const BarChart3    = (p) => <Icon {...p} d={["M3 3v18h18","M18 17V9","M13 17V5","M8 17v-3"]} />;
+
+    // Pure SVG Line Chart (no external lib)
+    const LineChartSVG = ({ data, getValFn }) => {
+      const W = 400, H = 180, PL = 55, PR = 10, PT = 10, PB = 20;
+      const vals = data.map(d => parseFloat(String(getValFn(d)).replace(/,/g,"")) || 0);
+      if (vals.length < 2) return (
+        <div style={{height:180}} className="flex items-center justify-center text-zinc-600 text-sm">資料不足</div>
       );
-      return foundKey ? obj[foundKey] : "";
+      const min = Math.min(...vals), max = Math.max(...vals);
+      const range = max - min || 1;
+      const iW = W - PL - PR, iH = H - PT - PB;
+      const px = (i) => PL + (i / (vals.length - 1)) * iW;
+      const py = (v) => PT + iH - ((v - min) / range) * iH;
+      const pts = vals.map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
+      const fmtK = v => {
+        const n = Math.round(v);
+        return Math.abs(n) >= 1000 ? (n/1000).toFixed(0)+"k" : String(n);
+      };
+      return (
+        <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"180px",display:"block"}}>
+          {[0, 0.5, 1].map((t, i) => (
+            <line key={i} x1={PL} x2={W-PR} y1={PT+iH*t} y2={PT+iH*t} stroke="#222" strokeDasharray="3 3"/>
+          ))}
+          {[min+(range), min+(range*0.5), min].map((v, i) => (
+            <text key={i} x={PL-4} y={PT+iH*(i/2)+4} textAnchor="end" fill="#71717a" fontSize="10" fontWeight="700">
+              {fmtK(v)}
+            </text>
+          ))}
+          <polyline points={pts} fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinejoin="round"/>
+          {vals.map((v, i) => (
+            <circle key={i} cx={px(i)} cy={py(v)} r="3" fill="#3B82F6"/>
+          ))}
+        </svg>
+      );
+    };
+
+    // Helpers
+    const getVal = (obj, key) => {
+      if (!obj) return "";
+      if (obj[key] !== undefined) return obj[key];
+      const clean = k => k.replace(/\s/g,"").replace(/[\u200B-\u200D\uFEFF]/g,"");
+      const t = clean(key);
+      const found = Object.keys(obj).find(k => clean(k)===t || clean(k).includes(t));
+      return found ? obj[found] : "";
     };
 
     const parseCSV = (text) => {
-      const cleanText = text.replace(/^\uFEFF/, "");
-      const lines = cleanText.split(/\r?\n/).filter((line) => line.trim() !== "");
-      if (lines.length < 1) return [];
-      const headers = lines[0].split(",").map((h) =>
-        h.trim().replace(/"/g, "").replace(/[\u200B-\u200D\uFEFF]/g, "")
-      );
-      return lines.slice(1).map((line) => {
-        const values = line
-          .split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
-          .map((v) => v.trim().replace(/"/g, ""));
+      const lines = text.replace(/^\uFEFF/,"").split(/\r?\n/).filter(l=>l.trim());
+      if (!lines.length) return [];
+      const headers = lines[0].split(",").map(h=>h.trim().replace(/"/g,"").replace(/[\u200B-\u200D\uFEFF]/g,""));
+      return lines.slice(1).map(line => {
+        const vals = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v=>v.trim().replace(/"/g,""));
         const obj = {};
-        headers.forEach((header, i) => { obj[header] = values[i] || ""; });
+        headers.forEach((h,i) => obj[h] = vals[i]||"");
         return obj;
       });
     };
 
-    const NavButton = ({ active, onClick, icon, label }) => (
-      <button
-        onClick={onClick}
-        className={`flex-1 flex flex-col items-center justify-center py-4 rounded-[28px] transition-all ${
-          active ? "bg-blue-600 text-white scale-105 shadow-lg" : "text-zinc-500"
-        }`}
-      >
-        {React.cloneElement(icon, { className: "w-6 h-6" })}
-        <span className="text-[11px] font-bold mt-1 tracking-tight">{label}</span>
+    const fmtCur = (val) => {
+      const n = parseFloat(String(val||0).replace(/,/g,"").replace("$","").trim());
+      return isNaN(n) ? "0" : n.toLocaleString("zh-TW");
+    };
+    const fmtPct = (val) => {
+      const n = parseFloat(String(val||0).replace(/%|\(|\)/g,"").trim());
+      return isNaN(n) ? "0.00%" : (n>=0?"+":"")+n.toFixed(2)+"%";
+    };
+    const isPos = (val) => parseFloat(String(val||0).replace(/,/g,"")) >= 0;
+    const pc = (val) => isPos(val) ? "text-red-500" : "text-green-500";
+
+    const NavBtn = ({ active, onClick, icon, label }) => (
+      <button onClick={onClick}
+        className={`flex-1 flex flex-col items-center justify-center py-4 rounded-[28px] transition-all ${active?"bg-blue-600 text-white scale-105 shadow-lg":"text-zinc-500"}`}>
+        {icon}
+        <span className="text-[11px] font-bold mt-1">{label}</span>
       </button>
     );
 
     const App = () => {
-      const [activeTab, setActiveTab] = useState("summary");
+      const [tab, setTab] = useState("summary");
       const [loading, setLoading] = useState(false);
       const [error, setError] = useState(null);
-      const [selectedPerson, setSelectedPerson] = useState(null);
-      const [expandedYears, setExpandedYears] = useState({});
-      const [data, setData] = useState({ p1: [], p2: [], p3: [], p4: [], p5: [], p6: [] });
+      const [selPerson, setSelPerson] = useState(null);
+      const [expYears, setExpYears] = useState({});
+      const [data, setData] = useState({p1:[],p2:[],p3:[],p4:[],p5:[],p6:[]});
 
-      const formatCurrency = (val) => {
-        if (val === undefined || val === null || val === "") return "0";
-        const cleanVal = String(val).replace(/,/g, "").replace("$", "").trim();
-        const num = parseFloat(cleanVal);
-        if (isNaN(num)) return "0";
-        return num.toLocaleString("zh-TW");
-      };
-
-      const formatPercent = (val) => {
-        if (!val) return "0.00%";
-        const cleanVal = String(val).replace("%", "").replace("(", "").replace(")", "").trim();
-        const num = parseFloat(cleanVal);
-        if (isNaN(num)) return "0.00%";
-        return (num >= 0 ? "+" : "") + num.toFixed(2) + "%";
-      };
-
-      const fetchSheetData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        const sheetConfig = [
-          { key: "p1", gid: "0" },
-          { key: "p2", tabName: "分頁2" },
-          { key: "p3", tabName: "分頁3" },
-          { key: "p4", tabName: "分頁4" },
-          { key: "p5", tabName: "分頁5" },
-          { key: "p6", tabName: "分頁6" },
+      const fetchData = useCallback(async () => {
+        setLoading(true); setError(null);
+        const cfg = [
+          {key:"p1", gid:"0"},
+          {key:"p2", tabName:"分頁2"},
+          {key:"p3", tabName:"分頁3"},
+          {key:"p4", tabName:"分頁4"},
+          {key:"p5", tabName:"分頁5"},
+          {key:"p6", tabName:"分頁6"},
         ];
         try {
-          const newData = { p1: [], p2: [], p3: [], p4: [], p5: [], p6: [] };
-          for (const config of sheetConfig) {
-            const url = config.gid
-              ? `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${config.gid}`
-              : `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(config.tabName)}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`連線失敗 [${config.tabName || "分頁1"}]`);
-            const text = await response.text();
-            newData[config.key] = parseCSV(text);
+          const nd = {p1:[],p2:[],p3:[],p4:[],p5:[],p6:[]};
+          for (const c of cfg) {
+            const url = c.gid
+              ? `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${c.gid}`
+              : `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(c.tabName)}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`連線失敗 [${c.tabName||"分頁1"}]`);
+            nd[c.key] = parseCSV(await res.text());
           }
-          setData(newData);
-          if (newData.p3.length > 0) {
-            const lastItem = newData.p3[newData.p3.length - 1];
-            const lastYear = String(getValByKey(lastItem, "日期")).substring(0, 4);
-            setExpandedYears({ [lastYear]: true });
+          setData(nd);
+          if (nd.p3.length) {
+            const yr = String(getVal(nd.p3[nd.p3.length-1],"日期")).substring(0,4);
+            setExpYears({[yr]:true});
           }
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setLoading(false);
-        }
+        } catch(e) { setError(e.message); }
+        finally { setLoading(false); }
       }, []);
 
-      useEffect(() => { fetchSheetData(); }, []);
+      useEffect(() => { fetchData(); }, []);
 
-      const latestSummary = useMemo(() => {
-        if (!data.p1 || data.p1.length === 0) return null;
-        return [...data.p1].sort((a, b) => new Date(getValByKey(b, "日期")) - new Date(getValByKey(a, "日期")))[0];
+      const latest = useMemo(() => {
+        if (!data.p1.length) return null;
+        return [...data.p1].sort((a,b)=>new Date(getVal(b,"日期"))-new Date(getVal(a,"日期")))[0];
       }, [data.p1]);
 
-      const latestBalance = useMemo(() => {
-        if (!data.p3.length) return "0";
-        return getValByKey(data.p3[data.p3.length - 1], "餘額");
+      const latestBal = useMemo(() =>
+        data.p3.length ? getVal(data.p3[data.p3.length-1],"餘額") : "0"
+      , [data.p3]);
+
+      const histByYear = useMemo(() => {
+        const g = {};
+        [...data.p3].reverse().forEach(item => {
+          const yr = String(getVal(item,"日期")).substring(0,4)||"其他";
+          if (!g[yr]) g[yr]=[];
+          g[yr].push(item);
+        });
+        return g;
       }, [data.p3]);
 
-      const historyByYear = useMemo(() => {
-        const groups = {};
-        [...data.p3].reverse().forEach((item) => {
-          const dateStr = String(getValByKey(item, "日期"));
-          const year = dateStr.substring(0, 4) || "其他";
-          if (!groups[year]) groups[year] = [];
-          groups[year].push(item);
+      const divGroups = useMemo(() => {
+        const g = {};
+        data.p4.forEach(item => {
+          const name = getVal(item,"姓名"); if(!name) return;
+          if(!g[name]) g[name]={items:[],total:0,investment:0};
+          g[name].total += parseFloat(String(getVal(item,"配發金額")).replace(/,/g,""))||0;
+          g[name].items.push(item);
         });
-        return groups;
-      }, [data.p3]);
-
-      const dividendGroups = useMemo(() => {
-        const groups = {};
-        data.p4.forEach((item) => {
-          const name = getValByKey(item, "姓名");
-          if (!name) return;
-          if (!groups[name]) groups[name] = { items: [], total: 0, investment: 0 };
-          const amount = parseFloat(String(getValByKey(item, "配發金額")).replace(/,/g, "")) || 0;
-          groups[name].items.push(item);
-          groups[name].total += amount;
+        data.p6.forEach(item => {
+          const name = getVal(item,"姓名"); if(!name) return;
+          if(!g[name]) g[name]={items:[],total:0,investment:0};
+          g[name].investment += parseFloat(String(getVal(item,"申購金額")).replace(/,/g,""))||0;
         });
-        data.p6.forEach((item) => {
-          const name = getValByKey(item, "姓名");
-          if (!name) return;
-          if (!groups[name]) groups[name] = { items: [], total: 0, investment: 0 };
-          const invAmount = parseFloat(String(getValByKey(item, "申購金額")).replace(/,/g, "")) || 0;
-          groups[name].investment += invAmount;
-        });
-        return groups;
+        return g;
       }, [data.p4, data.p6]);
 
-      const totalHistoricalProfit = useMemo(() => {
-        return data.p5.reduce((acc, item) => {
-          const profit = parseFloat(String(getValByKey(item, "損益")).replace(/,/g, "")) || 0;
-          return acc + profit;
-        }, 0);
-      }, [data.p5]);
+      const totalProfit = useMemo(() =>
+        data.p5.reduce((a,item)=>a+(parseFloat(String(getVal(item,"損益")).replace(/,/g,""))||0),0)
+      , [data.p5]);
 
-      const toggleYear = (year) => {
-        setExpandedYears((prev) => ({ ...prev, [year]: !prev[year] }));
-      };
+      const toggleYear = yr => setExpYears(p=>({...p,[yr]:!p[yr]}));
 
-      const renderContent = () => {
-        if (loading && !data.p1.length)
-          return (
-            <div className="flex flex-col items-center justify-center h-[60vh]">
-              <div style={{
-                width: '40px', height: '40px',
-                border: '4px solid rgba(59,130,246,0.2)',
-                borderTopColor: '#3B82F6',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                marginBottom: '16px'
-              }}></div>
-              <p className="text-zinc-400 font-bold text-lg animate-pulse">正在抓取雲端數據...</p>
-            </div>
-          );
+      if (loading && !data.p1.length) return (
+        <div className="flex flex-col items-center justify-center h-screen bg-black">
+          <div className="spin" style={{width:40,height:40,border:"4px solid rgba(59,130,246,.2)",borderTopColor:"#3B82F6",borderRadius:"50%",marginBottom:16}}/>
+          <p className="text-zinc-400 font-bold text-lg pulse">正在抓取雲端數據...</p>
+        </div>
+      );
 
-        if (error)
-          return (
-            <div className="p-8 bg-zinc-900 border border-red-500/20 rounded-[25px] flex flex-col items-center text-center space-y-4 mx-4">
-              <AlertCircle className="w-10 h-10 text-red-500" />
-              <h3 className="text-white font-bold text-xl">連線錯誤</h3>
-              <p className="text-zinc-400 text-sm">{error}</p>
-              <button onClick={fetchSheetData} className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg">
-                重新嘗試
-              </button>
-            </div>
-          );
+      if (error) return (
+        <div className="p-8 m-4 bg-zinc-900 border border-red-500/20 rounded-[25px] flex flex-col items-center text-center space-y-4">
+          <AlertIcon className="w-10 h-10 text-red-500"/>
+          <h3 className="text-white font-bold text-xl">連線錯誤</h3>
+          <p className="text-zinc-400 text-sm">{error}</p>
+          <button onClick={fetchData} className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg">重新嘗試</button>
+        </div>
+      );
 
-        switch (activeTab) {
+      const renderTab = () => {
+        switch(tab) {
           case "summary": {
-            if (!latestSummary)
-              return (
-                <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-[25px] text-center">
-                  <p className="text-zinc-500 font-bold text-lg">目前無績效資料</p>
-                </div>
-              );
-            const profit = getValByKey(latestSummary, "總損益");
-            const isProfitPos = parseFloat(String(profit).replace(/,/g, "")) >= 0;
+            if (!latest) return (
+              <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-[25px] text-center">
+                <p className="text-zinc-500 font-bold">目前無績效資料</p>
+              </div>
+            );
+            const profit = getVal(latest,"總損益");
             return (
               <div className="space-y-4 px-1 pb-10">
                 <div className="bg-zinc-900 p-6 rounded-[30px] border border-zinc-800 shadow-lg">
                   <p className="text-zinc-300 text-lg font-black mb-2 uppercase tracking-widest">
-                    本季損益 ({getValByKey(latestSummary, "日期") || "今日"})
+                    本季損益 ({getVal(latest,"日期")||"今日"})
                   </p>
-                  <h2 className={`text-5xl font-black tracking-tighter ${isProfitPos ? "text-red-500" : "text-green-500"}`}>
-                    {isProfitPos ? "+" : ""}{formatCurrency(profit)}
+                  <h2 className={`text-5xl font-black tracking-tighter ${pc(profit)}`}>
+                    {isPos(profit)?"+":""}{fmtCur(profit)}
                   </h2>
                 </div>
 
                 <div className="bg-zinc-900 p-6 rounded-[30px] border border-zinc-800 shadow-lg">
                   <h3 className="text-lg font-black flex items-center gap-2 text-white mb-4 uppercase tracking-widest">
-                    <TrendingUp className="w-6 h-6 text-blue-500" /> 本季績效趨勢
+                    <TrendingUp className="w-6 h-6 text-blue-500"/> 本季績效趨勢
                   </h3>
-                  <div className="h-56 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={data.p1}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                        <XAxis dataKey={(d) => getValByKey(d, "日期")} hide />
-                        <YAxis stroke="#71717a" fontSize={11} fontWeight="700" tickFormatter={(v) => formatCurrency(v)} width={45} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: "#000", border: "1px solid #333", borderRadius: "12px", fontSize: "13px", fontWeight: "bold" }}
-                          formatter={(val) => [formatCurrency(val), "總損益"]}
-                          labelFormatter={(label) => `日期: ${label}`}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey={(d) => parseFloat(String(getValByKey(d, "總損益")).replace(/,/g, "")) || 0}
-                          stroke="#3B82F6" strokeWidth={3} dot={false}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <LineChartSVG data={data.p1} getValFn={d=>getVal(d,"總損益")}/>
                 </div>
 
                 <div className="bg-zinc-900 p-6 rounded-[30px] border border-zinc-800 shadow-lg">
                   <div className="flex justify-between items-start mb-5">
                     <h3 className="text-lg font-black flex items-center gap-2 text-white uppercase tracking-widest mt-1">
-                      <BarChart3 className="w-6 h-6 text-yellow-500" /> 歷年投資績效
+                      <BarChart3 className="w-6 h-6 text-yellow-500"/> 歷年投資績效
                     </h3>
                     <div className="text-right">
                       <p className="text-[10px] text-zinc-500 font-black uppercase tracking-tighter mb-0.5">歷年損益合計（不含稅費）</p>
-                      <p className={`text-2xl font-black leading-none ${totalHistoricalProfit >= 0 ? "text-red-500" : "text-green-500"}`}>
-                        {totalHistoricalProfit >= 0 ? "+" : ""}{formatCurrency(totalHistoricalProfit)}
+                      <p className={`text-2xl font-black leading-none ${totalProfit>=0?"text-red-500":"text-green-500"}`}>
+                        {totalProfit>=0?"+":""}{fmtCur(totalProfit)}
                       </p>
                     </div>
                   </div>
                   <div className="space-y-3">
-                    {data.p5.length > 0 ? data.p5.map((item, idx) => {
-                      const quarter = getValByKey(item, "季度");
-                      if (!quarter) return null;
-                      const qProfit = getValByKey(item, "損益");
-                      const qRate = getValByKey(item, "報酬率") || getValByKey(item, "損益(%)");
-                      const isPos = parseFloat(String(qProfit).replace(/,/g, "")) >= 0;
+                    {data.p5.length ? data.p5.map((item,idx)=>{
+                      const q = getVal(item,"季度"); if(!q) return null;
+                      const qp = getVal(item,"損益");
+                      const qr = getVal(item,"報酬率")||getVal(item,"損益(%)");
                       return (
                         <div key={idx} className="flex justify-between items-center bg-black/30 p-4 rounded-[20px] border border-zinc-800/50">
-                          <span className="text-white font-black text-lg leading-none">{quarter}</span>
-                          <div className="text-right">
-                            <p className={`text-xl font-black ${isPos ? "text-red-500" : "text-green-500"}`}>
-                              {isPos ? "+" : ""}{formatCurrency(qProfit)}
-                              <span className="text-xs ml-1 opacity-80 font-bold">({formatPercent(qRate)})</span>
-                            </p>
-                          </div>
+                          <span className="text-white font-black text-lg">{q}</span>
+                          <p className={`text-xl font-black ${pc(qp)}`}>
+                            {isPos(qp)?"+":""}{fmtCur(qp)}
+                            <span className="text-xs ml-1 opacity-80 font-bold">({fmtPct(qr)})</span>
+                          </p>
                         </div>
                       );
-                    }) : (
-                      <p className="text-zinc-600 text-sm font-bold text-center py-4 italic">尚未載入歷年數據</p>
-                    )}
+                    }) : <p className="text-zinc-600 text-sm font-bold text-center py-4 italic">尚未載入歷年數據</p>}
                   </div>
                 </div>
               </div>
@@ -388,37 +289,31 @@
           case "holdings":
             return (
               <div className="px-1 space-y-2">
-                {data.p2.map((stock, idx) => {
-                  const name = getValByKey(stock, "股票名稱") || getValByKey(stock, "股票");
-                  if (!name) return null;
-                  const code = getValByKey(stock, "股票代號") || getValByKey(stock, "代號");
-                  const price = getValByKey(stock, "收盤價");
-                  const change = getValByKey(stock, "漲跌");
-                  const profitValue = getValByKey(stock, "損益");
-                  const profitRate = getValByKey(stock, "報酬率") || getValByKey(stock, "損益(%)");
-                  const isProfitPos = parseFloat(String(profitValue).replace(/,/g, "")) >= 0;
-                  const isPricePos = parseFloat(String(change).replace(/,/g, "")) >= 0;
+                {data.p2.map((stock,idx)=>{
+                  const name = getVal(stock,"股票名稱")||getVal(stock,"股票"); if(!name) return null;
+                  const code = getVal(stock,"股票代號")||getVal(stock,"代號");
+                  const price = getVal(stock,"收盤價");
+                  const change = getVal(stock,"漲跌");
+                  const pv = getVal(stock,"損益");
+                  const pr = getVal(stock,"報酬率")||getVal(stock,"損益(%)");
+                  const chgPos = parseFloat(String(change).replace(/,/g,""))>=0;
                   return (
-                    <div key={idx} className="bg-zinc-900 border border-zinc-800 px-5 py-4 rounded-[22px] flex items-center justify-between shadow-sm">
+                    <div key={idx} className="bg-zinc-900 border border-zinc-800 px-5 py-4 rounded-[22px] flex items-center justify-between">
                       <div className="flex-1 min-w-0 pr-2">
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <span className="text-zinc-100 font-bold text-lg truncate">{name}</span>
                           <span className="text-zinc-500 text-xs font-bold">({code})</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-zinc-300 text-base font-bold">{formatCurrency(price)}</span>
-                          <span className={`text-xs font-bold ${isPricePos ? "text-red-500" : "text-green-500"}`}>
-                            {isPricePos ? "▲" : "▼"} {Math.abs(change)}
+                          <span className="text-zinc-300 text-base font-bold">{fmtCur(price)}</span>
+                          <span className={`text-xs font-bold ${chgPos?"text-red-500":"text-green-500"}`}>
+                            {chgPos?"▲":"▼"} {Math.abs(change)}
                           </span>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`text-lg font-black leading-tight ${isProfitPos ? "text-red-500" : "text-green-500"}`}>
-                          {isProfitPos ? "+" : ""}{formatCurrency(profitValue)}
-                        </p>
-                        <p className={`text-xs font-bold ${isProfitPos ? "text-red-500" : "text-green-500"}`}>
-                          {formatPercent(profitRate)}
-                        </p>
+                        <p className={`text-lg font-black leading-tight ${pc(pv)}`}>{isPos(pv)?"+":""}{fmtCur(pv)}</p>
+                        <p className={`text-xs font-bold ${pc(pv)}`}>{fmtPct(pr)}</p>
                       </div>
                     </div>
                   );
@@ -429,44 +324,42 @@
           case "history":
             return (
               <div className="space-y-4 px-1">
-                <div className="bg-zinc-900 px-6 py-7 rounded-[28px] border border-zinc-800 flex justify-between items-center shadow-lg">
+                <div className="bg-zinc-900 px-6 py-7 rounded-[28px] border border-zinc-800 flex justify-between items-center">
                   <h3 className="text-zinc-200 font-black text-lg uppercase tracking-widest">帳戶餘額</h3>
-                  <span className="text-blue-500 font-black text-3xl tracking-tighter">${formatCurrency(latestBalance)}</span>
+                  <span className="text-blue-500 font-black text-3xl tracking-tighter">${fmtCur(latestBal)}</span>
                 </div>
                 <div className="space-y-3">
-                  {Object.keys(historyByYear).sort((a, b) => b - a).map((year) => (
-                    <div key={year} className="bg-zinc-900 border border-zinc-800 rounded-[28px] overflow-hidden shadow-md">
-                      <button onClick={() => toggleYear(year)} className="w-full px-6 py-4 flex justify-between items-center active:bg-zinc-800 transition-colors">
+                  {Object.keys(histByYear).sort((a,b)=>b-a).map(yr=>(
+                    <div key={yr} className="bg-zinc-900 border border-zinc-800 rounded-[28px] overflow-hidden">
+                      <button onClick={()=>toggleYear(yr)} className="w-full px-6 py-4 flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                          <Calendar className="w-5 h-5 text-zinc-500" />
-                          <span className="text-white font-black text-lg">{year} 年度</span>
+                          <CalendarIcon className="w-5 h-5 text-zinc-500"/>
+                          <span className="text-white font-black text-lg">{yr} 年度</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-zinc-500 text-xs font-bold">{historyByYear[year].length} 筆資料</span>
-                          {expandedYears[year] ? <ChevronUp className="w-5 h-5 text-zinc-600" /> : <ChevronDown className="w-5 h-5 text-zinc-600" />}
+                          <span className="text-zinc-500 text-xs font-bold">{histByYear[yr].length} 筆資料</span>
+                          {expYears[yr] ? <ChevronUp className="w-5 h-5 text-zinc-600"/> : <ChevronDown className="w-5 h-5 text-zinc-600"/>}
                         </div>
                       </button>
-                      {expandedYears[year] && (
-                        <div className="divide-y divide-zinc-800/50 border-t border-zinc-800">
-                          {historyByYear[year].map((item, idx) => {
-                            const amount = parseFloat(String(getValByKey(item, "金額")).replace(/,/g, "")) || 0;
-                            const note = getValByKey(item, "備註");
+                      {expYears[yr] && (
+                        <div className="border-t border-zinc-800">
+                          {histByYear[yr].map((item,idx)=>{
+                            const amt = parseFloat(String(getVal(item,"金額")).replace(/,/g,""))||0;
+                            const note = getVal(item,"備註");
                             return (
-                              <div key={idx} className="px-6 py-4 flex justify-between items-center">
+                              <div key={idx} className="px-6 py-4 flex justify-between items-center border-b border-zinc-800/40">
                                 <div className="flex flex-col flex-1 min-w-0 pr-3">
-                                  <span className="text-zinc-500 text-[10px] font-bold mb-0.5">{getValByKey(item, "日期")}</span>
+                                  <span className="text-zinc-500 text-[10px] font-bold mb-0.5">{getVal(item,"日期")}</span>
                                   <p className="text-zinc-100 text-base font-bold leading-tight truncate">
-                                    {getValByKey(item, "項目")}
-                                    {note && <span className="ml-1 text-zinc-500 text-sm font-medium">({note})</span>}
+                                    {getVal(item,"項目")}
+                                    {note && <span className="ml-1 text-zinc-500 text-sm">({note})</span>}
                                   </p>
                                 </div>
                                 <div className="text-right whitespace-nowrap">
-                                  <p className={`text-lg font-black ${amount >= 0 ? "text-red-500" : "text-green-500"}`}>
-                                    {amount >= 0 ? "+" : ""}{formatCurrency(amount)}
+                                  <p className={`text-lg font-black ${amt>=0?"text-red-500":"text-green-500"}`}>
+                                    {amt>=0?"+":""}{fmtCur(amt)}
                                   </p>
-                                  <p className="text-zinc-600 text-[10px] font-bold uppercase">
-                                    餘額: {formatCurrency(getValByKey(item, "餘額"))}
-                                  </p>
+                                  <p className="text-zinc-600 text-[10px] font-bold">餘額: {fmtCur(getVal(item,"餘額"))}</p>
                                 </div>
                               </div>
                             );
@@ -482,42 +375,35 @@
           case "dividends":
             return (
               <div className="space-y-4 px-1">
-                {Object.keys(dividendGroups).map((name) => {
-                  const group = dividendGroups[name];
-                  const recoveryRate = group.investment > 0 ? (group.total / group.investment) * 100 : 0;
+                {Object.keys(divGroups).map(name=>{
+                  const g = divGroups[name];
+                  const rate = g.investment>0 ? (g.total/g.investment*100) : 0;
                   return (
-                    <div key={name} className="bg-zinc-900 border border-zinc-800 rounded-[28px] overflow-hidden shadow-lg">
-                      <button
-                        onClick={() => setSelectedPerson(selectedPerson === name ? null : name)}
-                        className="w-full p-6 flex justify-between items-center active:bg-zinc-800"
-                      >
+                    <div key={name} className="bg-zinc-900 border border-zinc-800 rounded-[28px] overflow-hidden">
+                      <button onClick={()=>setSelPerson(selPerson===name?null:name)} className="w-full p-6 flex justify-between items-center">
                         <div className="flex items-center gap-4">
                           <div className="w-11 h-11 bg-blue-500/10 rounded-full flex items-center justify-center border border-blue-500/20">
-                            <User className="text-blue-500 w-6 h-6" />
+                            <UserIcon className="w-6 h-6 text-blue-500"/>
                           </div>
                           <div className="text-left">
-                            <h4 className="text-xl font-bold text-white leading-tight">{name}</h4>
+                            <h4 className="text-xl font-bold text-white">{name}</h4>
                             <div className="mt-1 flex items-baseline gap-1 flex-wrap">
                               <span className="text-zinc-300 text-sm font-bold">累積股息：</span>
-                              <span className="text-red-500 text-lg font-black">${formatCurrency(group.total)}</span>
-                              <span className="text-red-500 text-sm font-bold ml-1">({recoveryRate.toFixed(0)}%)</span>
+                              <span className="text-red-500 text-lg font-black">${fmtCur(g.total)}</span>
+                              <span className="text-red-500 text-sm font-bold ml-1">({rate.toFixed(0)}%)</span>
                             </div>
-                            <p className="text-zinc-500 text-xs font-bold mt-0.5">申購金額：${formatCurrency(group.investment)}</p>
+                            <p className="text-zinc-500 text-xs font-bold mt-0.5">申購金額：${fmtCur(g.investment)}</p>
                           </div>
                         </div>
-                        {selectedPerson === name ? <ChevronUp className="w-6 h-6 text-zinc-600" /> : <ChevronDown className="w-6 h-6 text-zinc-600" />}
+                        {selPerson===name ? <ChevronUp className="w-6 h-6 text-zinc-600"/> : <ChevronDown className="w-6 h-6 text-zinc-600"/>}
                       </button>
-                      {selectedPerson === name && (
+                      {selPerson===name && (
                         <div className="px-6 pb-6 space-y-2.5">
-                          <div className="h-px bg-zinc-800 mb-3" />
-                          {group.items.map((record, rIdx) => (
-                            <div key={rIdx} className="bg-black/30 p-4 rounded-[18px] flex justify-between items-center border border-zinc-800/20">
-                              <span className="text-white text-sm font-bold">
-                                {getValByKey(record, "年度")} {getValByKey(record, "項目")}
-                              </span>
-                              <span className="text-xl font-black text-yellow-500">
-                                ${formatCurrency(getValByKey(record, "配發金額"))}
-                              </span>
+                          <div className="h-px bg-zinc-800 mb-3"/>
+                          {g.items.map((rec,ri)=>(
+                            <div key={ri} className="bg-black/30 p-4 rounded-[18px] flex justify-between items-center border border-zinc-800/20">
+                              <span className="text-white text-sm font-bold">{getVal(rec,"年度")} {getVal(rec,"項目")}</span>
+                              <span className="text-xl font-black text-yellow-500">${fmtCur(getVal(rec,"配發金額"))}</span>
                             </div>
                           ))}
                         </div>
@@ -528,8 +414,7 @@
               </div>
             );
 
-          default:
-            return null;
+          default: return null;
         }
       };
 
@@ -537,38 +422,29 @@
         <div className="min-h-screen bg-black text-zinc-100 pb-40">
           <header className="p-8 pb-6 flex justify-between items-center sticky top-0 bg-black/90 backdrop-blur-xl z-50 border-b border-zinc-900">
             <div>
-              <h1 className="text-4xl font-black tracking-tighter text-white uppercase italic leading-none">
-                Ergodicity Fund
-              </h1>
-              <p className="text-[10px] text-zinc-600 font-black tracking-[0.3em] uppercase mt-2">
-                Mobile Insight V5.2
-              </p>
+              <h1 className="text-4xl font-black tracking-tighter text-white uppercase italic leading-none">Ergodicity Fund</h1>
+              <p className="text-[10px] text-zinc-600 font-black tracking-[0.3em] uppercase mt-2">Mobile Insight V5.2</p>
             </div>
-            <button
-              onClick={fetchSheetData}
-              className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl transition-all"
-              disabled={loading}
-            >
-              <RefreshCw className={`w-6 h-6 text-blue-500 ${loading ? "animate-spin" : ""}`} />
+            <button onClick={fetchData} className="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl" disabled={loading}>
+              <RefreshIcon className={`w-6 h-6 text-blue-500 ${loading?"spin":""}`}/>
             </button>
           </header>
 
-          <main className="px-3 pt-6">{renderContent()}</main>
+          <main className="px-3 pt-6">{renderTab()}</main>
 
           <nav className="fixed bottom-8 left-4 right-4 z-50">
             <div className="max-w-md mx-auto bg-zinc-900/95 backdrop-blur-2xl border border-zinc-800 rounded-[38px] p-2 flex justify-between shadow-2xl">
-              <NavButton active={activeTab === "summary"} onClick={() => setActiveTab("summary")} icon={<PieChart />} label="總覽" />
-              <NavButton active={activeTab === "holdings"} onClick={() => setActiveTab("holdings")} icon={<List />} label="持股" />
-              <NavButton active={activeTab === "history"} onClick={() => setActiveTab("history")} icon={<History />} label="帳務" />
-              <NavButton active={activeTab === "dividends"} onClick={() => setActiveTab("dividends")} icon={<Gift />} label="收益" />
+              <NavBtn active={tab==="summary"}   onClick={()=>setTab("summary")}   icon={<PieChart className="w-6 h-6"/>}    label="總覽"/>
+              <NavBtn active={tab==="holdings"}  onClick={()=>setTab("holdings")}  icon={<ListIcon className="w-6 h-6"/>}    label="持股"/>
+              <NavBtn active={tab==="history"}   onClick={()=>setTab("history")}   icon={<HistoryIcon className="w-6 h-6"/>} label="帳務"/>
+              <NavBtn active={tab==="dividends"} onClick={()=>setTab("dividends")} icon={<GiftIcon className="w-6 h-6"/>}    label="收益"/>
             </div>
           </nav>
         </div>
       );
     };
 
-    const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<App />);
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
   </script>
 </body>
 </html>
