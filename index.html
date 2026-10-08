@@ -35,7 +35,8 @@
   <script type="text/babel">
     const { useState, useEffect, useCallback, useMemo } = React;
 
-    const SPREADSHEET_ID = "1KbG0zxG2Nszrx7T5zXsobcueyP3L1_cfal0DKZ14CMw";
+    // Apps Script 網頁應用程式的網址（部署 → 管理部署作業 → 網頁應用程式）
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbylqvyp953d3TeGZQxpKPn_xFIyHs7dy-8aJm8ouVNq9bZv32dYsEVS0SC57ba-EPOr/exec";
 
     // SVG Icons
     const Icon = ({ d, className = "w-6 h-6", color }) => (
@@ -103,6 +104,32 @@
       return found ? obj[found] : "";
     };
 
+    // 抓一個網址的文字；Apps Script 偶爾會回 404/5xx，失敗就等一下再試，最多 3 次
+    const fetchText = async (url, tries = 3) => {
+      for (let i = 1; ; i++) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) return await res.text();
+          if (i >= tries) throw new Error(`HTTP ${res.status}`);
+        } catch (err) {
+          if (i >= tries) throw err;
+        }
+        await new Promise(r => setTimeout(r, 800 * i));
+      }
+    };
+
+    // Apps Script 回的是二維陣列（第一列是標題），轉成跟原本 parseCSV 一樣的物件陣列
+    const rowsToObjects = (rows) => {
+      if (!rows || !rows.length) return [];
+      const cleanH = h => String(h).trim().replace(/"/g,"").replace(/[\u200B-\u200D\uFEFF]/g,"");
+      const headers = rows[0].map(cleanH);
+      return rows.slice(1).map(r => {
+        const obj = {};
+        headers.forEach((h,i) => obj[h] = String(r[i] ?? "").trim().replace(/"/g,""));
+        return obj;
+      });
+    };
+
     const parseCSV = (text) => {
       const lines = text.replace(/^\uFEFF/,"").split(/\r?\n/).filter(l=>l.trim());
       if (!lines.length) return [];
@@ -144,23 +171,19 @@
 
       const fetchData = useCallback(async () => {
         setLoading(true); setError(null);
-        const cfg = [
-          {key:"p1", gid:"0"},
-          {key:"p2", tabName:"分頁2"},
-          {key:"p3", tabName:"分頁3"},
-          {key:"p4", tabName:"分頁4"},
-          {key:"p5", tabName:"分頁5"},
-          {key:"p6", tabName:"分頁6"},
-        ];
+        const tabNames = {p1:"分頁1", p2:"分頁2", p3:"分頁3", p4:"分頁4", p5:"分頁5", p6:"分頁6"};
         try {
-          const nd = {p1:[],p2:[],p3:[],p4:[],p5:[],p6:[]};
-          for (const c of cfg) {
-            const url = c.gid
-              ? `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${c.gid}`
-              : `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(c.tabName)}`;
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`連線失敗 [${c.tabName||"分頁1"}]`);
-            nd[c.key] = parseCSV(await res.text());
+          // 一次呼叫拿回六個分頁
+          let text;
+          try { text = await fetchText(GAS_URL); }
+          catch (err) { throw new Error("連線失敗"); }
+          let raw;
+          try { raw = JSON.parse(text); }
+          catch (err) { throw new Error("回傳的資料格式不正確"); }
+          const nd = {};
+          for (const k of Object.keys(tabNames)) {
+            if (!raw[k]) throw new Error(`找不到分頁 [${tabNames[k]}]`);
+            nd[k] = rowsToObjects(raw[k]);
           }
           setData(nd);
           if (nd.p3.length) {
